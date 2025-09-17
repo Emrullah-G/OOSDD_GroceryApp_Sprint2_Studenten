@@ -5,7 +5,7 @@ using Grocery.Core.Models;
 namespace Grocery.Core.Data.Repositories
 {
     public class ClientRepository : IClientRepository
-    {
+    { 
         private readonly List<Client> clientList;
 
         public ClientRepository()
@@ -19,12 +19,17 @@ namespace Grocery.Core.Data.Repositories
 
         public Client? Get(string email)
         {
-            return clientList[0];
+            if (string.IsNullOrWhiteSpace(email))
+                return null;
+
+            return clientList.FirstOrDefault(
+                client => string.Equals(client._emailAddress, email, StringComparison.OrdinalIgnoreCase)
+            );
         }
 
         public Client? Get(int id)
         {
-            return clientList[0];
+            return clientList.FirstOrDefault(client => client.Id == id);
         }
 
         public List<Client> GetAll()
