@@ -34,10 +34,34 @@ namespace Grocery.App.ViewModels
 
         private void GetAvailableProducts()
         {
-            //Maak de lijst AvailableProducts leeg
-            //Haal de lijst met producten op
-            //Controleer of het product al op de boodschappenlijst staat, zo niet zet het in de AvailableProducts lijst
-            //Houdt rekening met de voorraad (als die nul is kun je het niet meer aanbieden).            
+
+            AvailableProducts.Clear();
+
+            var allProducts = _productService.GetAll();
+            var groceryListItems = MyGroceryListItems;
+
+            foreach (var product in allProducts)
+            {
+
+                bool alreadyOnList = false;
+
+                foreach (var groceryListItem in groceryListItems)
+                {
+                    if (groceryListItem.ProductId == product.Id)
+                    {
+                        alreadyOnList = true;
+                        break;
+                    }
+                }
+
+                if (product.Stock <= 0 || alreadyOnList)
+                {
+                    continue;
+                }
+
+                AvailableProducts.Add(product);
+            }
+
         }
 
         partial void OnGroceryListChanged(GroceryList value)
@@ -54,12 +78,32 @@ namespace Grocery.App.ViewModels
         [RelayCommand]
         public void AddProduct(Product product)
         {
-            //Controleer of het product bestaat en dat de Id > 0
-            //Maak een GroceryListItem met Id 0 en vul de juiste productid en grocerylistid
-            //Voeg het GroceryListItem toe aan de dataset middels de _groceryListItemsService
-            //Werk de voorraad (Stock) van het product bij en zorg dat deze wordt vastgelegd (middels _productService)
-            //Werk de lijst AvailableProducts bij, want dit product is niet meer beschikbaar
-            //call OnGroceryListChanged(GroceryList);
+
+            if (product is null || product.Stock <= 0) return;
+
+            var addedAmount = 1;
+
+            var newItem = new GroceryListItem(
+                id: 0,
+                groceryListId: GroceryList.Id,
+                productId: product.Id,
+                amount: addedAmount
+            );
+
+            _groceryListItemsService.Add(newItem);
+
+            product.Stock -= addedAmount;
+
+            //System.Diagnostics.Debug.WriteLine($"Added GroceryListItem: ProductId={newItem.ProductId}, Amount={newItem.Amount}, GroceryListId={newItem.GroceryListId}");
+            //System.Diagnostics.Debug.WriteLine($"New stock of: {product.Stock} -> ProductId={product.Id}");
+
+            // #TODO Because of caching on page this is not working well.
+
+            _productService.Update(product);
+
+            OnGroceryListChanged(GroceryList);
+
         }
+
     }
 }
